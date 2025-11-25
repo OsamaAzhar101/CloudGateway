@@ -1,7 +1,13 @@
 package com.oasys.CloudGateway;
 
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JCircuitBreaker;
+import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JCircuitBreakerFactory;
+import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JConfigBuilder;
+import org.springframework.cloud.client.circuitbreaker.Customizer;
+import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
 public class CloudGatewayApplication {
@@ -11,7 +17,7 @@ public class CloudGatewayApplication {
 	}
 
 
-    @org.springframework.context.annotation.Bean
+/*    @org.springframework.context.annotation.Bean
     public org.springframework.cloud.client.circuitbreaker.Customizer<org.springframework.
             cloud.circuitbreaker.resilience4j.Resilience4JConfigBuilder> resilience4JCircuitBreakerCustomizer() {
         return builder -> builder
@@ -22,5 +28,18 @@ public class CloudGatewayApplication {
                         .failureRateThreshold(50)
                         .waitDurationInOpenState(java.time.Duration.ofSeconds(30))
                         .build());
-    }
+    }*/
+@Bean
+public Customizer <Resilience4JCircuitBreakerFactory> globalCustomConfiguration() {
+    return factory -> factory.configureDefault(id ->
+            new Resilience4JConfigBuilder(
+                    id)
+                    .circuitBreakerConfig(
+                            CircuitBreakerConfig.ofDefaults()
+
+                    ).build()
+    );
+}
+
+
 }

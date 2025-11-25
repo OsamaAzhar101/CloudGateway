@@ -1,8 +1,10 @@
+server:
+  port: 8089
 spring:
   application:
     name: CloudGateway
   config:
-    import: configserver:http://localhost:9296
+    import: optional:configserver:http://localhost:9296
   cloud:
     gateway:
       routes:
@@ -11,25 +13,21 @@ spring:
           predicates:
             - Path=/user-service/**
           filters:
+            - StripPrefix=1
             - name: CircuitBreaker
               args:
                 name: userServiceCircuitBreaker
-                fallbackUri: forward:/user-service/fallback
-            - StripPrefix=1
+                fallbackUri: forward:/user-service-fallback
         - id: order-service
           uri: lb://ORDER-SERVICE
           predicates:
-            - Path=/order-service/**
+            - Path=/order/**
           filters:
             - StripPrefix=1
             - name: CircuitBreaker
               args:
                 name: orderServiceCircuitBreaker
-                fallbackUri: forward:/order-service/fallback
-
-server:
-  port: 9296
-
+                fallbackUri: forward:/order-fallback
 
 eureka:
   instance:
