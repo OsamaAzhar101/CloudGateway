@@ -7,14 +7,16 @@ import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JCircuit
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JCircuitBreakerFactory;
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JConfigBuilder;
 import org.springframework.cloud.client.circuitbreaker.Customizer;
+import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.context.annotation.Bean;
+import reactor.core.publisher.Mono;
 
 @SpringBootApplication
 public class CloudGatewayApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(CloudGatewayApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(CloudGatewayApplication.class, args);
+    }
 
 
 /*    @org.springframework.context.annotation.Bean
@@ -29,17 +31,23 @@ public class CloudGatewayApplication {
                         .waitDurationInOpenState(java.time.Duration.ofSeconds(30))
                         .build());
     }*/
-@Bean
-public Customizer <Resilience4JCircuitBreakerFactory> globalCustomConfiguration() {
-    return factory -> factory.configureDefault(id ->
-            new Resilience4JConfigBuilder(
-                    id)
-                    .circuitBreakerConfig(
-                            CircuitBreakerConfig.ofDefaults()
 
-                    ).build()
-    );
-}
+    @Bean
+    KeyResolver userKeyResolver() {
+        return exchange -> Mono.just("userKey");
+    }
+
+    @Bean
+    public Customizer<Resilience4JCircuitBreakerFactory> globalCustomConfiguration() {
+        return factory -> factory.configureDefault(id ->
+                new Resilience4JConfigBuilder(
+                        id)
+                        .circuitBreakerConfig(
+                                CircuitBreakerConfig.ofDefaults()
+
+                        ).build()
+        );
+    }
 
 
 }

@@ -1,6 +1,27 @@
 server:
   port: 8089
 spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          okta:
+            client-id: 0oaxtfbpz4KhTFqmu697
+            client-secret: fSXozMyAuzuncC8Q5-sQCEwYxSmTNj_1vjls
+            scope: openid, profile, email, offline_access
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+          # For service-to-service calls (if gateway needs to call APIs)
+          internal-client:
+            provider: okta
+            client-id: 0oaxtfbpz4KhTFqmu697
+            client-secret: fSXozMyAuzuncC8Q5-sQCEwYxSmTNj_1vjlsB
+            scope: service.access
+            authorization-grant-type: client_credentials
+        provider:
+          okta:
+            issuer-uri: https://integrator-6702530.okta.com/oauth2/default
+
   application:
     name: CloudGateway
   config:
@@ -13,27 +34,52 @@ spring:
           predicates:
             - Path=/user-service/**
           filters:
-            - StripPrefix=1
+            #            - StripPrefix=1
+            #            - TokenRelay
             - name: CircuitBreaker
               args:
                 name: userServiceCircuitBreaker
                 fallbackUri: forward:/user-service-fallback
-        - id: order-service
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 1
+        - id: ORDER-SERVICE
           uri: lb://ORDER-SERVICE
           predicates:
             - Path=/order/**
           filters:
-            - StripPrefix=1
+            #            - StripPrefix=1
+            - TokenRelay
             - name: CircuitBreaker
               args:
                 name: orderServiceCircuitBreaker
                 fallbackUri: forward:/order-fallback
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 1
 
-eureka:
-  instance:
-    prefer-ip-address: true
-  client:
-    fetch-registry: true
-    register-with-eureka: true
-    service-url:
-      defaultZone: ${EUREKA_SERVER_ADDRESS:http://localhost:8761/eureka}
+resilience4j:
+  circuitbreaker:
+    instances:
+      orderService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+  timelimiter:
+    instances:
+      orderService:
+        timeoutDuration: 5s
+
+
+
+okta:
+  oauth2:
+    issuer: https://integrator-6702530.okta.com/oauth2/default
+    audience: api://default
+    client-id: 0oaxtfbpz4KhTFqmu697
+    client-secret: fSXozMyAuzuncC8Q5-sQCEwYxSmT
+    scopes: openid, profile, email, offline_access
